@@ -13,10 +13,87 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\Network">
+      <UniqueIdentifier>{34d68f64-e474-47a1-9721-4f46de7715ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Network\Client">
+      <UniqueIdentifier>{7739a85c-081c-44f5-a74e-093285f9b5ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Network\Server">
+      <UniqueIdentifier>{caec4793-f92b-467b-b060-4c41d4613f70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Sys">
+      <UniqueIdentifier>{4982b2b3-4581-4a6a-ad89-adcdc54fcf42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Sys\Logging">
+      <UniqueIdentifier>{e66ba045-a93c-4137-83f5-054db69956c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Sys\Util">
+      <UniqueIdentifier>{760ea745-de55-4cea-83fc-a18732473ae4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="nettest.cpp">
+    <ClCompile Include="nettest.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="net.c">
+      <Filter>Source Files\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="cmdline_main.c">
+      <Filter>Source Files\Sys</Filter>
+    </ClCompile>
+    <ClCompile Include="net_client.c">
+      <Filter>Source Files\Network\Client</Filter>
+    </ClCompile>
+    <ClCompile Include="net_server.c">
+      <Filter>Source Files\Network\Server</Filter>
+    </ClCompile>
+    <ClCompile Include="util.c">
+      <Filter>Source Files\Sys\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="util_console.c">
+      <Filter>Source Files\Sys\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="logging.c">
+      <Filter>Source Files\Sys\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="net_protocol.c">
+      <Filter>Source Files\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="sys.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cmdline.h">
+      <Filter>Source Files\Sys</Filter>
+    </ClInclude>
+    <ClInclude Include="core.h">
+      <Filter>Source Files\Sys</Filter>
+    </ClInclude>
+    <ClInclude Include="net_client.h">
+      <Filter>Source Files\Network\Client</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
+      <Filter>Source Files\Sys\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="util_console.h">
+      <Filter>Source Files\Sys\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="logging.h">
+      <Filter>Source Files\Sys\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="net_protocol.h">
+      <Filter>Source Files\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="net_server.h">
+      <Filter>Source Files\Network\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="sys.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="net.h">
+      <Filter>Source Files\Network</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

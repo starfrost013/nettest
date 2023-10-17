@@ -1,11 +1,34 @@
 // nettest.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-#include <iostream>
+#include "core.h"
+#include "sys.h"
+#include "cmdline.h"
+#include "net_client.h"
+#include "net_server.h"
 
-int main()
-{
-    std::cout << "Hello World!\n";
+int main(int argc, char* argv[])
+{   
+    // Temporary MAIN function
+
+    if (!Sys_Init(argc, argv))
+    {
+        exit(1);
+    }
+
+    if (sys_mode == mode_server)
+    {
+        NET_ServerMain();
+    }
+    else
+    {
+        // SDL3_net CRASHES if you try and connect to localhost
+        // FILE BUG REPORT !!!
+        if (NET_ConnectClient("localhost", NET_SERVER_PORT))
+        {
+            NET_ClientMain();
+        }
+    }
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu

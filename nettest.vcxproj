@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -102,8 +102,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)external\sdl3\include;$(SolutionDir)external\sdl3_image\include;$(SolutionDir)external\sdl3_mixer\include;$(SolutionDir)external\sdl3_ttf\include;$(SolutionDir)external\sdl3_net\include</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -116,8 +118,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)external\sdl3\include;$(SolutionDir)external\sdl3_image\include;$(SolutionDir)external\sdl3_mixer\include;$(SolutionDir)external\sdl3_ttf\include;$(SolutionDir)external\sdl3_net\include</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,7 +131,36 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="nettest.cpp" />
+    <ClCompile Include="cmdline_main.c" />
+    <ClCompile Include="logging.c" />
+    <ClCompile Include="nettest.c" />
+    <ClInclude Include="net.h" />
+    <ClCompile Include="net_client.c" />
+    <ClCompile Include="net.c" />
+    <ClCompile Include="net_protocol.c" />
+    <ClCompile Include="net_server.c" />
+    <ClCompile Include="sys.c" />
+    <ClCompile Include="util.c" />
+    <ClCompile Include="util_console.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cmdline.h" />
+    <ClInclude Include="core.h" />
+    <ClInclude Include="logging.h" />
+    <ClInclude Include="net_client.h" />
+    <ClInclude Include="net_protocol.h" />
+    <ClInclude Include="net_server.h" />
+    <ClInclude Include="sys.h" />
+    <ClInclude Include="util.h" />
+    <ClInclude Include="util_console.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="external\sdl3\VisualC\SDL\SDL.vcxproj">
+      <Project>{81ce8daf-ebb2-4761-8e45-b71abcca8c68}</Project>
+    </ProjectReference>
+    <ProjectReference Include="external\sdl3_net\VisualC\SDL_net.vcxproj">
+      <Project>{8ab3504f-5e58-4910-afe8-7a1e595ac3f4}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

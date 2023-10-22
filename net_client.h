@@ -17,16 +17,19 @@ typedef struct netclient_s
 	Sint32					timeout;							//Timeout. If the client isn't connected this amount of milliseconds after creation, it kills itself.
 	char*					name;								//Name of this client
 	SDL_bool				connected;							//Is this client connected?
+	SDL_bool				signed_in;							//Is this client actually signed in? (Client Auth complete)
 } netclient_t;
 
 extern netclient_t*			sys_client;							//Current instance client - CANNOT be present at the same time as sys_server (see net_server.h)
 
 extern bool					sys_client_running;					//Is the client running?
 
-void	NET_InitClient();										//Initialises the client (sys_client)
+void	Client_Init();											//Initialises the client (sys_client)
 
-bool	NET_ConnectClient(char* address, Uint16 port);			//Connects the client to a server on address address using port port. If port 0 is provided it will use the default
+bool	Client_Connect(char* address, Uint16 port);				//Connects the client to a server on address address using port port. If port 0 is provided it will use the default
 																//specified by NET_SERVER_PORT define (port 9069 currently)
-void	NET_ClientMain();										//Client Main function
+void	Client_Main();											//Client Main function
 
-void	NET_ClientShutdown();									//Shutdown the client
+void	Client_Disconnect();									//Disconnects from the server
+
+void	Client_Shutdown();										//Shutdown the client

@@ -8,6 +8,7 @@ Logger* Logger_new()
 	Logger* logger = (Logger*)malloc(sizeof(Logger));
 
 	SDL_assert(logger != NULL);
+	if (logger == NULL) return NULL;		//Shutup MSVC warnings 
 
 	memset(logger, 0x00, sizeof logger);
 
@@ -18,9 +19,10 @@ Logger* Logger_new()
 	logger->handle = malloc(sizeof(FILE));
 
 	SDL_assert(logger->handle != NULL);
+	if (logger->handle == NULL) return NULL;		//Shutup MSVC warnings 
 
 	memset(logger->handle, 0x00, sizeof(FILE));
-	
+
 	if (Util_EnumHasFlag(logger->settings->source, LogSource_File))
 	{
 		errno_t error = fopen_s(&(logger->handle), logger->settings->fileName, "w+");
@@ -56,6 +58,7 @@ LogSettings* LogSettings_new(const char* fileName, LogChannel channels, LogSourc
 	LogSettings* settings = (LogSettings*)malloc(sizeof(LogSettings));
 
 	SDL_assert(settings != NULL);
+	if (settings == NULL) return NULL;		//Shutup MSVC warnings 
 
 	memset(settings, 0x00, sizeof settings);
 	settings->fileName = fileName;

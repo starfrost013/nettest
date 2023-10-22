@@ -27,6 +27,9 @@
 // For code organisation reasons
 #include "net_protocol.h"										
 
+// Was the last message successful?
+extern bool		last_msg_successful;
+
 //
 // Initialises NET subsystem
 //
@@ -35,11 +38,17 @@ void	NET_Init();
 //
 // Read functions 
 //
-Uint8	NET_ReadByte(Uint8 buf[], int start);
-Sint16	NET_ReadShort(Uint8 buf[], int start);
-Sint32	NET_ReadInt(Uint8 buf[], int start);
-float	NET_ReadFloat(Uint8 buf[], int start);
-char*	NET_ReadString(Uint8 buf[], int start);
+Uint8	NET_ReadByteReliable(SDLNet_StreamSocket* socket);
+Sint16	NET_ReadShortReliable(SDLNet_StreamSocket* socket);
+Sint32	NET_ReadIntReliable(SDLNet_StreamSocket* socket);
+float	NET_ReadFloatReliable(SDLNet_StreamSocket* socket);
+char*	NET_ReadStringReliable(SDLNet_StreamSocket* socket);
+
+Uint8	NET_ReadByteUnreliable(SDLNet_DatagramSocket* socket);
+Sint16	NET_ReadShortUnreliable(SDLNet_DatagramSocket* socket);
+Sint32	NET_ReadIntUnreliable(SDLNet_DatagramSocket* socket);
+float	NET_ReadFloatUnreliable(SDLNet_DatagramSocket* socket);
+char*	NET_ReadStringUnreliable(SDLNet_DatagramSocket* socket);
 
 //
 // Reliable band (high-freq) functions
@@ -60,7 +69,7 @@ void	NET_WriteIntUnreliable(SDLNet_DatagramSocket* socket, SDLNet_Address* addr,
 void	NET_WriteFloatUnreliable(SDLNet_DatagramSocket* socket, SDLNet_Address* addr, Uint16 port, float data);
 void	NET_WriteStringUnreliable(SDLNet_DatagramSocket* socket, SDLNet_Address* addr, Uint16 port, char* data);
 
-bool				NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, void* buf, int buflen);		//Checks for incoming reliable message. Returns TRUE if successful.
+bool				NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, int len);		//Checks for incoming reliable message. Returns TRUE if successful.
 SDLNet_Datagram*	NET_IncomingUnreliableMessage(SDLNet_DatagramSocket* socket, int expected_length);		//Checks for incoming unreliable messages. Returns NULL if no messages, 
 																											//a pointer to a dgram containing the message if there are messages waiting
 

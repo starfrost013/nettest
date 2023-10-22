@@ -1,10 +1,13 @@
 #pragma once
 #include "net_client.h"
 
-bool			sys_client_running;				// Is the client running?	
-netclient_t*	sys_client;						// Current instance client object (cannot be the same as net_server)
+bool			sys_client_running;												// Is the client running?	
+netclient_t*	sys_client;														// Current instance client object (cannot be the same as net_server)
 
-void NET_InitClient()
+void			Client_ReadReliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH]);	// Read client reliable message
+void			Client_ReadUnreliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH]);// Read client unreliable message
+
+void Client_Init()
 {
 	sys_client = malloc(sizeof(netclient_t));
 
@@ -14,10 +17,10 @@ void NET_InitClient()
 		return;
 	}
 
-	memset(sys_client, 0x00, sizeof(netclient_t));
+	memset(sys_client, 0x00, sizeof(netclient_t));	//Shutup compiler
 }
 
-bool NET_ConnectClient(char* address, Uint16 port)
+bool Client_Connect(char* address, Uint16 port)
 {
 	printf("Connecting to server at %s\n", address);
 
@@ -66,6 +69,7 @@ bool NET_ConnectClient(char* address, Uint16 port)
 	// set up the unreliable band. this doesn't actually try and connect to the server, it just fires shit off at the server
 	// does it go? fuck if i know!!!
 	sys_client->socket_unreliable = SDLNet_CreateDatagramSocket(NULL, sys_client->client_port);
+	sys_client->name = "Player";
 
 	int connected = SDLNet_WaitUntilConnected(sys_client->socket_reliable, -1);
 
@@ -76,22 +80,67 @@ bool NET_ConnectClient(char* address, Uint16 port)
 		return false;
 	}
 
-	// go
+	// this line is temp
 	sys_client_running = true;
 	Logging_LogAll("Connection accepted!\n");
+	sys_client->connected = true;
 	return true;
 }
 
-void NET_ClientMain()
+void Client_Main()
 {
 	// TODO: packet check
 	while (sys_client_running)
 	{
+		Uint8 buf[NET_MESSAGE_MAX_LENGTH];
 
+		Client_ReadReliableMessage(buf);
+
+		// Read unreliable socket message
+
+		/*
+		if (NET_IncomingUnreliableMessage(sys_client->socket_reliable, buf, NET_MESSAGE_MAX_LENGTH) != NULL)
+		{
+			Client_ReadUnreliableMessage(buf);
+		}
+		*/
 	}
 }
 
-void NET_ClientShutdown()
+void Client_ReadReliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH])
+{
+	Uint8 msg_id = NET_ReadByteReliable(sys_client->socket_reliable, &buf, 1);
+
+	if (!last_msg_successful) return;
+
+	// switch msg num
+	switch (msg_id)
+	{
+		case msg_invalid:
+			Logging_LogChannel("INVALID message received from server!", LogChannel_Fatal);
+			break;
+		case msg_auth_challenge: // send protocol version
+			NET_WriteByteReliable(sys_client->socket_reliable, msg_auth_response);
+			NET_WriteByteReliable(sys_client->socket_reliable, NET_PROTOCOL_VERSION);
+			break;
+		case msg_auth_clientinfo_request:
+			NET_WriteStringReliable(sys_client->socket_reliable, sys_client->name);
+			NET_WriteShortReliable(sys_client->socket_reliable, sys_client->client_port);
+			break;
+	}
+}
+
+void Client_ReadUnreliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH])
+{
+
+}
+
+void Client_Disconnect()
+{
+
+}
+
+void Client_Shutdown()
 {
 
 }

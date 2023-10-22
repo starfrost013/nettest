@@ -30,13 +30,13 @@ bool Sys_Init(int argc, char* argv[])
 
     if (sys_mode == mode_server)
     {
-        Logging_LogChannel("NET_InitServer", LogChannel_Message);
-        NET_InitServer();
+        Logging_LogChannel("Server_Init", LogChannel_Message);
+        Server_Init();
     }
     else
     {
-        Logging_LogChannel("NET_InitClient", LogChannel_Message);
-        NET_InitClient();
+        Logging_LogChannel("Client_Init", LogChannel_Message);
+        Client_Init();
     }
 
     return true;

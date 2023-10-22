@@ -18,15 +18,15 @@ int main(int argc, char* argv[])
 
     if (sys_mode == mode_server)
     {
-        NET_ServerMain();
+        Server_Main();
     }
     else
     {
         // SDL3_net CRASHES if you try and connect to localhost
         // FILE BUG REPORT !!!
-        if (NET_ConnectClient("localhost", NET_SERVER_PORT))
+        if (Client_Connect("localhost", NET_SERVER_PORT))
         {
-            NET_ClientMain();
+            Client_Main();
         }
     }
 }

@@ -4,10 +4,10 @@
 
 bool			sys_server_running;											// Is the server running?
 netserver_t*	sys_server;													// Current instance server object
-bool			NET_ServerCheckForNewClients();								// Check for new clients
-bool			NET_ServerAddClient(SDLNet_StreamSocket* next_client);		// Add a client - sets up its unreliable band and authenticates it
+bool			Server_CheckForNewClients();								// Check for new clients
+bool			Server_AddClient(SDLNet_StreamSocket* next_client);		// Add a client - sets up its unreliable band and authenticates it
 
-bool NET_InitServer()
+bool Server_Init()
 {
 	// Allocate a server.
 	sys_server = malloc(sizeof(netserver_t));
@@ -34,22 +34,22 @@ bool NET_InitServer()
 	return true;
 }
 
-void NET_ServerMain()
+void Server_Main()
 {
 	Logging_LogAll("The server is now up");
 
 	while (sys_server_running)
 	{
 		// check 
-		if (!NET_ServerCheckForNewClients())
+		if (!Server_CheckForNewClients())
 		{
 			Logging_LogAll("FATAL - Error checking for new clients");
-			NET_ServerShutdown();
+			Server_Shutdown();
 		}
 	}
 }
 
-bool NET_ServerCheckForNewClients()
+bool Server_CheckForNewClients()
 {
 	SDLNet_StreamSocket* next_client;
 
@@ -57,7 +57,7 @@ bool NET_ServerCheckForNewClients()
 	{
 		if (next_client != NULL)
 		{
-			return NET_ServerAddClient(next_client);
+			return Server_AddClient(next_client);
 		}
 
 		return true;
@@ -67,12 +67,12 @@ bool NET_ServerCheckForNewClients()
 	return false;
 }
 
-bool NET_ServerAddClient(SDLNet_StreamSocket* next_client)
+bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 {
 	Logging_LogAll("Client hello. Sending authentication...");
 
-	NET_WriteByteReliable(next_client, msg_auth_challenge);
-	NET_WriteByteReliable(next_client, NET_PROTOCOL_VERSION);
+	NET_WriteByteReliable(new_socket, msg_auth_challenge);
+	NET_WriteByteReliable(new_socket, NET_PROTOCOL_VERSION);
 
 	//wait for the client to respond
 	//this implements its own loop as there is not a client to iterate through
@@ -81,11 +81,12 @@ bool NET_ServerAddClient(SDLNet_StreamSocket* next_client)
 	// Current phase of sign-on for this client
 	int		auth_phase = 0;
 
+	// Username the client auth'd with
+	char*	net_username;
+	memset(&net_username, 0x00, sizeof(net_username));		// Shutup compiler
+
 	// Did the client successfully auth?
 	bool	succeeded_fully = false;
-
-	Uint8	buf_phase1[2];			// Phase1: Protocol version check
-	Uint8	buf_phase2[64];			// Phase2: Client Information
 
 	// start a timer
 	while (SDL_GetTicks() < ticks + NET_AUTH_TIMEOUT)
@@ -93,10 +94,16 @@ bool NET_ServerAddClient(SDLNet_StreamSocket* next_client)
 		switch (auth_phase)
 		{
 			case 0:
-				if (NET_IncomingReliableMessage(next_client, &buf_phase1, 2))
+				Uint8 msg_id, protocol_version;
+
+				msg_id = NET_ReadByteReliable(new_socket);
+				protocol_version = NET_ReadByteReliable(new_socket);
+
+				if (last_msg_successful
+					&& msg_id == msg_auth_response)
 				{
-					if (buf_phase1[0] != msg_auth_response
-						|| buf_phase1[1] != NET_PROTOCOL_VERSION)
+					// make sure the right protocol version was sent
+					if (protocol_version != NET_PROTOCOL_VERSION)
 					{
 						Logging_LogAll("Client connection failed - wrong protocol version");
 						break;
@@ -106,37 +113,64 @@ bool NET_ServerAddClient(SDLNet_StreamSocket* next_client)
 						Logging_LogAll("Client connection - verified protocol version");
 
 						// send client request
-						NET_WriteByteReliable(next_client, msg_auth_clientinfo_request);
+						NET_WriteByteReliable(new_socket, msg_auth_clientinfo_request);
 						auth_phase = 1;
 					}
 				}
+				continue;
 			case 1:
+				// read from client
+				msg_id = NET_ReadByteReliable(new_socket);
 
-				if (NET_IncomingReliableMessage(next_client, &buf_phase2, 64))
+				if (last_msg_successful
+					&& msg_id == msg_auth_clientinfo_response)
 				{
-					if (buf_phase2[0] != msg_auth_clientinfo_response)
+					net_username = NET_ReadStringReliable(new_socket);
+					Uint16 port = (Uint16)NET_ReadShortReliable(new_socket);
+
+					// check unreliable is on a real prot
+					if (port < NET_CLIENT_PORT_MIN
+						|| port > NET_CLIENT_PORT_MAX)
 					{
-						Logging_LogChannel("Client did NOT send clientinfo!", LogChannel_Error);
+						Logging_LogChannel("Client sent invalid port (must be in range 49152-65535)", LogChannel_Error);
 						break;
 					}
-					else
+
+					// check the client provided a username
+					if (strlen(net_username) == 0)
 					{
-						char* net_username = NET_ReadString(&buf_phase2, 1);
-						Sint16 port = NET_ReadShort(&buf_phase2, 1 + strlen(net_username) + 1);
-
-						if (port < NET_CLIENT_PORT_MIN
-							|| port > NET_CLIENT_PORT_MAX)
-						{
-							Logging_LogChannel("Client sent invalid port (must be in range 49152-65535)", LogChannel_Error);
-						}
+						Logging_LogChannel("Client sent a zero length username", LogChannel_Error);
+						break;
 					}
-				}
 
+					succeeded_fully = true;
+					break;
+				}
+				continue;
 		}	
 	}
+
+	// kill client
+	if (!succeeded_fully)
+	{
+		SDLNet_DestroyStreamSocket(new_socket);
+		return false;
+	}
+
+	// add client
+	netclient_t new_client;
+
+	memset(&new_client, 0x00, sizeof(netclient_t));
+
+	new_client.socket_reliable = new_socket;
+	strcpy(new_client.name, net_username);
+
+	// set the client!
+	sys_server->clients[sys_server->num_clients] = new_client;
+	sys_server->num_clients++;
 }
 
-void NET_ServerShutdown()
+void Server_Shutdown()
 {
 
 }

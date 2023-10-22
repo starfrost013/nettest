@@ -31,6 +31,9 @@
     <Filter Include="Source Files\Sys\Util">
       <UniqueIdentifier>{760ea745-de55-4cea-83fc-a18732473ae4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Network\Common">
+      <UniqueIdentifier>{7d185700-0a2f-49d0-9265-8107ca575f27}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="nettest.c">
@@ -61,6 +64,9 @@
       <Filter>Source Files\Network</Filter>
     </ClCompile>
     <ClCompile Include="sys.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="net_common.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -94,6 +100,9 @@
     </ClInclude>
     <ClInclude Include="net.h">
       <Filter>Source Files\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="net_common.h">
+      <Filter>Source Files\Network\Common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

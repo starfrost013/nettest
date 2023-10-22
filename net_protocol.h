@@ -18,3 +18,6 @@ typedef enum netmessagetype_e
 																
 	msg_auth_clientinfo_response = 4,							//[string] username [short] unreliable port
 } netmessagetype;
+
+// Network Message names for debug
+extern char* net_message_names[];

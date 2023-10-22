@@ -111,7 +111,9 @@ void Client_ReadReliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH])
 {
 	Uint8 msg_id = NET_ReadByteReliable(sys_client->socket_reliable, &buf, 1);
 
-	if (!last_msg_successful) return;
+
+	if (!msg_waiting) return;
+	Logging_LogChannel(net_message_names[msg_id], LogChannel_Message);
 
 	// switch msg num
 	switch (msg_id)
@@ -124,6 +126,7 @@ void Client_ReadReliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH])
 			NET_WriteByteReliable(sys_client->socket_reliable, NET_PROTOCOL_VERSION);
 			break;
 		case msg_auth_clientinfo_request:
+			NET_WriteByteReliable(sys_client->socket_reliable, msg_auth_clientinfo_response);
 			NET_WriteStringReliable(sys_client->socket_reliable, sys_client->name);
 			NET_WriteShortReliable(sys_client->socket_reliable, sys_client->client_port);
 			break;

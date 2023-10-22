@@ -137,6 +137,7 @@
     <ClInclude Include="net.h" />
     <ClCompile Include="net_client.c" />
     <ClCompile Include="net.c" />
+    <ClCompile Include="net_common.c" />
     <ClCompile Include="net_protocol.c" />
     <ClCompile Include="net_server.c" />
     <ClCompile Include="sys.c" />
@@ -148,6 +149,7 @@
     <ClInclude Include="core.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="net_client.h" />
+    <ClInclude Include="net_common.h" />
     <ClInclude Include="net_protocol.h" />
     <ClInclude Include="net_server.h" />
     <ClInclude Include="sys.h" />

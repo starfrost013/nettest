@@ -5,7 +5,7 @@
 bool			sys_server_running;											// Is the server running?
 netserver_t*	sys_server;													// Current instance server object
 bool			Server_CheckForNewClients();								// Check for new clients
-bool			Server_AddClient(SDLNet_StreamSocket* next_client);		// Add a client - sets up its unreliable band and authenticates it
+bool			Server_AddClient(SDLNet_StreamSocket* next_client);			// Add a client - sets up its reliable and unreliable bads and authenticates it
 
 bool Server_Init()
 {
@@ -97,11 +97,11 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 				Uint8 msg_id, protocol_version;
 
 				msg_id = NET_ReadByteReliable(new_socket);
-				protocol_version = NET_ReadByteReliable(new_socket);
 
-				if (last_msg_successful
-					&& msg_id == msg_auth_response)
+				if (msg_id == msg_auth_response)
 				{
+					protocol_version = NET_ReadByteReliable(new_socket);
+
 					// make sure the right protocol version was sent
 					if (protocol_version != NET_PROTOCOL_VERSION)
 					{
@@ -122,10 +122,10 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 				// read from client
 				msg_id = NET_ReadByteReliable(new_socket);
 
-				if (last_msg_successful
-					&& msg_id == msg_auth_clientinfo_response)
+				if (msg_waiting)
 				{
 					net_username = NET_ReadStringReliable(new_socket);
+
 					Uint16 port = (Uint16)NET_ReadShortReliable(new_socket);
 
 					// check unreliable is on a real prot

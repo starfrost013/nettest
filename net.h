@@ -28,7 +28,7 @@
 #include "net_protocol.h"										
 
 // Was the last message successful?
-extern bool		last_msg_successful;
+extern bool		msg_waiting;
 
 //
 // Initialises NET subsystem
@@ -69,7 +69,7 @@ void	NET_WriteIntUnreliable(SDLNet_DatagramSocket* socket, SDLNet_Address* addr,
 void	NET_WriteFloatUnreliable(SDLNet_DatagramSocket* socket, SDLNet_Address* addr, Uint16 port, float data);
 void	NET_WriteStringUnreliable(SDLNet_DatagramSocket* socket, SDLNet_Address* addr, Uint16 port, char* data);
 
-bool				NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, int len);		//Checks for incoming reliable message. Returns TRUE if successful.
+bool				NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, int len);						//Checks for incoming reliable message. Returns TRUE if successful.
 SDLNet_Datagram*	NET_IncomingUnreliableMessage(SDLNet_DatagramSocket* socket, int expected_length);		//Checks for incoming unreliable messages. Returns NULL if no messages, 
 																											//a pointer to a dgram containing the message if there are messages waiting
 

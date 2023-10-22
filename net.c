@@ -3,7 +3,7 @@
 #include "net_client.h"
 #include "net_server.h"
 
-bool			last_msg_successful;																// Was the last message successful?
+bool			msg_waiting;																// Was the last message successful?
 Uint8			net_msg_buffer[NET_MESSAGE_MAX_LENGTH];												// Network Message buffer
 char			net_string_buffer[NET_STRING_MAX_LENGTH-1];											// Buffer to hold strings we read from net (like Quake!)
 
@@ -26,7 +26,8 @@ void NET_Init()
 
 Uint8 NET_ReadByteReliable(SDLNet_StreamSocket* socket)
 {
-	if (!NET_IncomingReliableMessage(socket, 1))
+	if (NET_IncomingReliableMessage(socket, 1) 
+		&& !msg_waiting)
 	{
 		return 0; // see last_msg_successful
 	}
@@ -38,7 +39,8 @@ Uint8 NET_ReadByteReliable(SDLNet_StreamSocket* socket)
 
 Sint16 NET_ReadShortReliable(SDLNet_StreamSocket* socket)
 {
-	if (!NET_IncomingReliableMessage(socket, 2))
+	if (NET_IncomingReliableMessage(socket, 2)
+		&& !msg_waiting)
 	{
 		return 0;
 	}
@@ -49,7 +51,8 @@ Sint16 NET_ReadShortReliable(SDLNet_StreamSocket* socket)
 
 Sint32 NET_ReadIntReliable(SDLNet_StreamSocket* socket)
 {
-	if (!NET_IncomingReliableMessage(socket, 4))
+	if (NET_IncomingReliableMessage(socket, 4)
+		&& !msg_waiting)
 	{
 		return 0;
 	}
@@ -59,7 +62,8 @@ Sint32 NET_ReadIntReliable(SDLNet_StreamSocket* socket)
 
 float NET_ReadFloatReliable(SDLNet_StreamSocket* socket)
 {
-	if (!NET_IncomingReliableMessage(socket, 4))
+	if (NET_IncomingReliableMessage(socket, 4)
+		&& !msg_waiting)
 	{
 		return 0;
 	}
@@ -69,7 +73,8 @@ float NET_ReadFloatReliable(SDLNet_StreamSocket* socket)
 
 char* NET_ReadStringReliable(SDLNet_StreamSocket* socket)
 {
-	if (!NET_IncomingReliableMessage(socket, NET_STRING_MAX_LENGTH))
+	if (NET_IncomingReliableMessage(socket, 1)
+		&& !msg_waiting)
 	{
 		return NULL;
 	}
@@ -139,7 +144,7 @@ void NET_WriteDataReliable(SDLNet_StreamSocket* socket, int buflen)
 
 SDLNet_Datagram* NET_IncomingUnreliableMessage(SDLNet_DatagramSocket* socket, int expected_length)
 {
-	last_msg_successful = false;
+	msg_waiting = false;
 
 	SDLNet_Datagram* msg;
 
@@ -166,14 +171,14 @@ SDLNet_Datagram* NET_IncomingUnreliableMessage(SDLNet_DatagramSocket* socket, in
 	// assert if size wrong
 	SDL_assert(msg->buflen >= expected_length);
 
-	last_msg_successful = true;
+	msg_waiting = true;
 	return msg;
 }
 
 bool NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, int buflen)
 {
 	// set last message successful value to false
-	last_msg_successful = false;
+	msg_waiting = false;
 
 	// MAX STRING Length 256
 	Sint32 bytes_read = SDLNet_ReadFromStreamSocket(socket, &net_msg_buffer, buflen);
@@ -185,12 +190,31 @@ bool NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, int buflen)
 			//TODO: va_args
 			Logging_LogAll("Error reading from reliable socket");
 			Logging_LogAll(SDL_GetError());
+
+			return false; // only returns false on failure
 		}
 
-		return false;
+		// if we didn't get the message first time...
+
+		if (!msg_waiting)
+		{
+			// ...wait until NET_MESSAGE_TIMEOUT to see if there is a message coming
+
+			Uint64 ticks = SDL_GetTicks();
+
+			while (SDL_GetTicks() < ticks + NET_PACKET_TIMEOUT
+				&& bytes_read < buflen)
+			{
+				bytes_read = SDLNet_ReadFromStreamSocket(socket, &net_msg_buffer, buflen);
+			}
+		}
+
+		// ignore if we didn't get enough bytes
+		if (bytes_read < buflen) return true;
 	}
 
-	last_msg_successful = true;
+	// tell everyone else there is actually a message here
+	msg_waiting = true;
 
 #ifdef _DEBUG
 	printf("NetDebug: recv %d bytes\n", bytes_read);

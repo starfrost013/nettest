@@ -58,6 +58,10 @@ bool Client_Connect(char* address, Uint16 port)
 	//TODO: Varargs support logging
 	printf("Using port %d for reliable updates\n", sys_client->server_port);
 
+	// todo: reduce the chance two people connecting in the same 1s period don't get the same unreliable port and therefore cannot connect,
+	// use different rand alg?
+	// splitting hairs when not very much works.
+
 	// RAND_MAX = 32767 so duplicate 
 	sys_client->client_port = rand() * 2;
 
@@ -84,6 +88,8 @@ bool Client_Connect(char* address, Uint16 port)
 	sys_client_running = true;
 	Logging_LogAll("Connection accepted!\n");
 	sys_client->connected = true;
+
+
 	return true;
 }
 
@@ -109,10 +115,10 @@ void Client_Main()
 
 void Client_ReadReliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH])
 {
-	Uint8 msg_id = NET_ReadByteReliable(sys_client->socket_reliable, &buf, 1);
-
+	Uint8 msg_id = NET_ReadByteReliable(sys_client->socket_reliable);
 
 	if (!msg_waiting) return;
+
 	Logging_LogChannel(net_message_names[msg_id], LogChannel_Message);
 
 	// switch msg num

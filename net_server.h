@@ -15,10 +15,9 @@ typedef struct netserver_s
 {
 	SDLNet_Server*			server;								//The server!									
 	Uint16					port;								//SDL type
-	int						max_clients;						//Maximum number of clients
-	int						num_clients;						//Current number of clients
+	Sint32					max_clients;						//Maximum number of clients
+	Sint32					num_clients;						//Current number of clients
 	netclient_t				clients[MAX_CLIENT_COUNT];			//Local copy of client socket
-	bool					connected;							//Is this client connected?
 } netserver_t;
 
 extern netserver_t* sys_server;									//Current instance server - CANNOT be present at the same time as sys_client

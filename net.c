@@ -21,6 +21,7 @@ void NET_Init()
 		exit(1);
 	}
 
+	memset(&net_string_buffer, 0x00, sizeof(Uint8) * NET_STRING_MAX_LENGTH - 1);
 	memset(&net_msg_buffer, 0x00, sizeof(Uint8) * NET_MESSAGE_MAX_LENGTH);
 }
 
@@ -31,8 +32,6 @@ Uint8 NET_ReadByteReliable(SDLNet_StreamSocket* socket)
 	{
 		return 0; // see last_msg_successful
 	}
-
-	SDL_assert(ARRAY_SIZE(net_msg_buffer) >= 1);
 
 	return net_msg_buffer[0];
 }
@@ -45,8 +44,8 @@ Sint16 NET_ReadShortReliable(SDLNet_StreamSocket* socket)
 		return 0;
 	}
 
-	// ntohl byte reordering handled by SDL3
-	return (net_msg_buffer[0] << 8) + net_msg_buffer[1];
+	// convert to native ordering on little-endian systems (network is always big-endian)
+	return (net_msg_buffer[1] << 8) + net_msg_buffer[0];
 }
 
 Sint32 NET_ReadIntReliable(SDLNet_StreamSocket* socket)
@@ -57,7 +56,8 @@ Sint32 NET_ReadIntReliable(SDLNet_StreamSocket* socket)
 		return 0;
 	}
 
-	return (net_msg_buffer[0] << 24) + (net_msg_buffer[1] << 16) + (net_msg_buffer[2] << 8) + net_msg_buffer[3];
+	// convert to native ordering on little-endian systems (network is always big-endian)
+	return (net_msg_buffer[3] << 24) + (net_msg_buffer[2] << 16) + (net_msg_buffer[1] << 8) + net_msg_buffer[0];
 }
 
 float NET_ReadFloatReliable(SDLNet_StreamSocket* socket)
@@ -68,7 +68,8 @@ float NET_ReadFloatReliable(SDLNet_StreamSocket* socket)
 		return 0;
 	}
 
-	return (float)((net_msg_buffer[0] << 24) + (net_msg_buffer[1] << 16) + (net_msg_buffer[2] << 8) + net_msg_buffer[3]);
+	// convert to native ordering on little-endian systems (network is always big-endian)
+	return (float)((net_msg_buffer[3] << 24) + (net_msg_buffer[2] << 16) + (net_msg_buffer[1] << 8) + net_msg_buffer[0]);
 }
 
 char* NET_ReadStringReliable(SDLNet_StreamSocket* socket)
@@ -82,8 +83,16 @@ char* NET_ReadStringReliable(SDLNet_StreamSocket* socket)
 	// length is first byte
 	Uint8 length = net_msg_buffer[0];
 
-	// we already checked start + len
-	SDL_strlcpy(&net_string_buffer, &net_msg_buffer, length);
+	// recv the rest of the string in a second message (this is in order to get around the fact that we don't know
+	// the string length before receiving the string, and exploits the fact SDL3_net implements a continuous stream so we don't have to send two messages
+	// in NET_WriteStringReliable
+
+	// TODO: MAKE THIS SHIT ASYNC 
+	if (NET_IncomingReliableMessage(socket, length)
+		&& msg_waiting)
+	{
+		SDL_strlcpy(&net_string_buffer, &net_msg_buffer, length + 1);
+	}
 
 	return &net_string_buffer;
 }
@@ -103,43 +112,6 @@ char* NET_ReadStringUnreliable(SDLNet_DatagramSocket* socket)
 	SDL_strlcpy(&net_string_buffer, msg->buf + 1, NET_STRING_MAX_LENGTH - 1);
 
 	return &net_string_buffer;
-}
-
-void NET_WriteDataReliable(SDLNet_StreamSocket* socket, int buflen)
-{
-	// disconnect if we failed to write data
-	if (SDLNet_WriteToStreamSocket(socket, &net_msg_buffer, buflen) != 0)
-	{
-		Logging_LogChannel("Failed to write data to reliable socket.", LogChannel_Error);
-		Logging_LogChannel(SDL_GetError(), LogChannel_Error);
-
-		if (sys_mode == mode_client)
-		{
-			Client_Shutdown();
-		}
-		else
-		{
-			//TODO: Kick Client
-			Server_Shutdown();
-		}
-	}
-
-	if (SDLNet_WaitUntilStreamSocketDrained(socket, NET_PACKET_TIMEOUT) > 0)
-	{
-		Logging_LogChannel("Timed out", LogChannel_Error);
-	}
-
-#ifdef _DEBUG
-	printf("NetDebug: sent %d bytes\n", buflen);
-
-	for (int i = 0; i < buflen; i++)
-	{
-		printf("0x%X ", net_msg_buffer[i]);
-	}
-
-	printf("\n");
-
-#endif
 }
 
 SDLNet_Datagram* NET_IncomingUnreliableMessage(SDLNet_DatagramSocket* socket, int expected_length)
@@ -231,6 +203,43 @@ bool NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, int buflen)
 	return true; 
 }
 
+void NET_WriteDataReliable(SDLNet_StreamSocket* socket, int buflen)
+{
+	// disconnect if we failed to write data
+	if (SDLNet_WriteToStreamSocket(socket, &net_msg_buffer, buflen) != 0)
+	{
+		Logging_LogChannel("Failed to write data to reliable socket.", LogChannel_Error);
+		Logging_LogChannel(SDL_GetError(), LogChannel_Error);
+
+		if (sys_mode == mode_client)
+		{
+			Client_Shutdown();
+		}
+		else
+		{
+			//TODO: Kick Client
+			Server_Shutdown();
+		}
+	}
+
+	if (SDLNet_WaitUntilStreamSocketDrained(socket, NET_PACKET_TIMEOUT) > 0)
+	{
+		Logging_LogChannel("Timed out", LogChannel_Error);
+	}
+
+#ifdef _DEBUG
+	printf("NetDebug: sent %d bytes\n", buflen);
+
+	for (int i = 0; i < buflen; i++)
+	{
+		printf("0x%X ", net_msg_buffer[i]);
+	}
+
+	printf("\n");
+
+#endif
+}
+
 void NET_WriteByteReliable(SDLNet_StreamSocket* socket, Uint8 data)
 {
 	if (sys_mode == mode_client
@@ -316,8 +325,6 @@ void NET_WriteStringReliable(SDLNet_StreamSocket* socket, char* data)
 	if (sys_mode == mode_client
 		&& !sys_client->connected) return;
 
-	Uint8 buf[NET_STRING_MAX_LENGTH];
-
 	if (data == NULL
 		|| strlen(data) == 0)
 	{
@@ -331,11 +338,11 @@ void NET_WriteStringReliable(SDLNet_StreamSocket* socket, char* data)
 		return;
 	}
 
-	buf[0] = strlen(data);
+	net_msg_buffer[0] = strlen(data);
 
-	SDL_strlcpy(&buf[1], data, NET_STRING_MAX_LENGTH - 1);
+	SDL_strlcpy(&net_msg_buffer[1], data, NET_STRING_MAX_LENGTH - 1);
 
-	SDLNet_WriteToStreamSocket(socket, &buf, NET_STRING_MAX_LENGTH);
+	NET_WriteDataReliable(socket, strlen(data) + 1);
 }
 
 void NET_WriteStringUnreliable(SDLNet_DatagramSocket* socket, SDLNet_Address* addr, Uint16 port, char* data)

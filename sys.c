@@ -6,9 +6,10 @@
 
 bool Sys_Init(int argc, char* argv[])
 {
-    // Seed random
-    srand(SDL_GetTicks());
+    // Seed random, should be random enough 
+    srand(time(NULL));
 
+    // Init SDL
     if (SDL_Init(SDL_INIT_EVERYTHING))
     {
         Logging_LogAll("Failed to initialise SDL");
@@ -16,6 +17,7 @@ bool Sys_Init(int argc, char* argv[])
         return false;
     }
 
+    // Log sign-on information
     Logging_Init();
 
     Logging_LogAll(VERSION);
@@ -23,11 +25,14 @@ bool Sys_Init(int argc, char* argv[])
 
     Logging_LogChannel("==== Initialising network ====", LogChannel_Message);
 
+    // Initialise network
     NET_Init();
 
+    // Parse command lin
     Logging_LogChannel("Parsing command line", LogChannel_Message);
     CmdLine_Parse(argc, argv);
 
+    // Initialise server.
     if (sys_mode == mode_server)
     {
         Logging_LogChannel("Server_Init", LogChannel_Message);
@@ -44,5 +49,6 @@ bool Sys_Init(int argc, char* argv[])
 
 void Sys_Shutdown()
 {
-
+    // quit
+    SDL_Quit();
 }

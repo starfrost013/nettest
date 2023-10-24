@@ -60,6 +60,7 @@ bool Server_CheckForNewClients()
 			return Server_AddClient(next_client);
 		}
 
+		// no client waiting
 		return true;
 	}
 
@@ -83,13 +84,16 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 
 	// Username the client auth'd with
 	char*	net_username;
+	Uint16	unreliable_port;
+
 	memset(&net_username, 0x00, sizeof(net_username));		// Shutup compiler
 
 	// Did the client successfully auth?
 	bool	succeeded_fully = false;
 
 	// start a timer
-	while (SDL_GetTicks() < ticks + NET_AUTH_TIMEOUT)
+	while (SDL_GetTicks() < ticks + NET_AUTH_TIMEOUT
+		&& !succeeded_fully)
 	{
 		switch (auth_phase)
 		{
@@ -122,15 +126,16 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 				// read from client
 				msg_id = NET_ReadByteReliable(new_socket);
 
-				if (msg_waiting)
+				if (msg_waiting
+					&& msg_id == msg_auth_clientinfo_response)
 				{
 					net_username = NET_ReadStringReliable(new_socket);
 
-					Uint16 port = (Uint16)NET_ReadShortReliable(new_socket);
+					unreliable_port = (Uint16)NET_ReadShortReliable(new_socket);
 
 					// check unreliable is on a real prot
-					if (port < NET_CLIENT_PORT_MIN
-						|| port > NET_CLIENT_PORT_MAX)
+					if (unreliable_port < NET_CLIENT_PORT_MIN
+						|| unreliable_port > NET_CLIENT_PORT_MAX)
 					{
 						Logging_LogChannel("Client sent invalid port (must be in range 49152-65535)", LogChannel_Error);
 						break;
@@ -158,16 +163,20 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 	}
 
 	// add client
-	netclient_t new_client;
+	netclient_t* new_client = &sys_server->clients[sys_server->num_clients];
 
-	memset(&new_client, 0x00, sizeof(netclient_t));
+	memset(new_client, 0x00, sizeof(netclient_t));
 
-	new_client.socket_reliable = new_socket;
-	strcpy(new_client.name, net_username);
+	new_client->socket_reliable = new_socket;	// Set reliable client
+	new_client->client_port = unreliable_port;	// Sett unreliable port
+	new_client->connected = true;				// This is only used on client side, but set it here anyway
+	new_client->signed_in = true;				// Set to true
+	new_client->name = net_username;
 
-	// set the client!
-	sys_server->clients[sys_server->num_clients] = new_client;
 	sys_server->num_clients++;
+
+	printf("User %s joined the game, using unreliable port %d!\n", new_client->name, new_client->client_port);
+	return true; 
 }
 
 void Server_Shutdown()

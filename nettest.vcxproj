@@ -140,6 +140,7 @@
     <ClCompile Include="net_common.c" />
     <ClCompile Include="net_protocol.c" />
     <ClCompile Include="net_server.c" />
+    <ClCompile Include="r_core.c" />
     <ClCompile Include="sys.c" />
     <ClCompile Include="util.c" />
     <ClCompile Include="util_console.c" />

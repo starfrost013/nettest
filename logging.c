@@ -80,7 +80,7 @@ bool Logging_Init()
 	return (sys_logger != NULL);
 }
 
-void Logging_LogChannel(const char* text, LogChannel channel)
+void Logging_LogChannel(const char* text, LogChannel channel, ...)
 {
 	if (!Util_EnumHasFlag(sys_logger->settings->channels, channel))
 	{

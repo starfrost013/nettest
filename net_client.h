@@ -12,8 +12,8 @@ typedef struct netclient_s
 	SDLNet_StreamSocket*	socket_reliable;					//Socket used for communicating with the server. This is used for connecting and low-freq stuff.
 	SDLNet_DatagramSocket*	socket_unreliable;					//Socket used for unreliably communicating with the server. This is used for movement updates and high-freq stuff.
 	SDLNet_Address*			server_addr;						//Address of the server to connect to
-	Uint16					server_port;						//Port of the server to connect to
-	Uint16					client_port;						//Client port used for communicating with server on unreliable band.
+	Uint16					port_reliable;						//Port of the server to connect to
+	Uint16					port_unreliable;					//Client port used for communicating with server on unreliable band.
 	Sint32					timeout;							//Timeout. If the client isn't connected this amount of milliseconds after creation, it kills itself.
 	char*					name;								//Name of this client
 	SDL_bool				connected;							//Is this client connected?

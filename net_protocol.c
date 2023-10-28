@@ -3,9 +3,10 @@
 
 char* net_message_names[] =
 {
-	"net_invalid",
-	"net_auth_challenge",
-	"net_auth_response",
-	"net_auth_clientinfo_request",
-	"net_auth_clientinfo_response",
+	"msg_invalid",
+	"msg_auth_challenge",
+	"msg_auth_response",
+	"msg_auth_clientinfo_request",
+	"msg_auth_clientinfo_response",
+	"msg_disconnect",
 };

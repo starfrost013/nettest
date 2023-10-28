@@ -34,6 +34,9 @@
     <Filter Include="Source Files\Network\Common">
       <UniqueIdentifier>{7d185700-0a2f-49d0-9265-8107ca575f27}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render">
+      <UniqueIdentifier>{2c60164f-4f16-4cf7-80c2-882cc7d622f7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="nettest.c">
@@ -68,6 +71,9 @@
     </ClCompile>
     <ClCompile Include="net_common.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="r_core.c">
+      <Filter>Source Files\Render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

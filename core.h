@@ -2,7 +2,7 @@
 // Core Headers
 // SDL libs and stdbool are used
 
-#define VERSION_NUMBER		"Alpha 1.0"
+#define VERSION_NUMBER		"Alpha 2.0"
 #define VERSION				"Version " VERSION_NUMBER
 #define	BUILD_DATE			"Built " __DATE__ " " __TIME__
 

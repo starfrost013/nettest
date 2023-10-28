@@ -17,6 +17,8 @@ typedef enum netmessagetype_e
 	msg_auth_clientinfo_request = 3,							//Request client info
 																
 	msg_auth_clientinfo_response = 4,							//[string] username [short] unreliable port
+
+	msg_disconnect = 5,											//Disconnects.
 } netmessagetype;
 
 // Network Message names for debug

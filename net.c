@@ -87,7 +87,7 @@ char* NET_ReadStringReliable(SDLNet_StreamSocket* socket)
 	// the string length before receiving the string, and exploits the fact SDL3_net implements a continuous stream so we don't have to send two messages
 	// in NET_WriteStringReliable
 
-	// TODO: MAKE THIS SHIT ASYNC 
+
 	if (NET_IncomingReliableMessage(socket, length)
 		&& msg_waiting)
 	{
@@ -163,6 +163,9 @@ bool NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, int buflen)
 			Logging_LogAll("Error reading from reliable socket");
 			Logging_LogAll(SDL_GetError());
 
+			// if we are the client, disconnect
+			if (sys_mode == mode_client) Client_Disconnect();
+
 			return false; // only returns false on failure
 		}
 
@@ -171,7 +174,7 @@ bool NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, int buflen)
 		if (!msg_waiting)
 		{
 			// ...wait until NET_MESSAGE_TIMEOUT to see if there is a message coming
-
+			// TODO: MAKE THIS SHIT ASYNC (although it can't take that long after the first packet?)
 			Uint64 ticks = SDL_GetTicks();
 
 			while (SDL_GetTicks() < ticks + NET_PACKET_TIMEOUT

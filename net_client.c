@@ -27,7 +27,7 @@ bool Client_Connect(char* address, Uint16 port)
 	// set port and timeout
 	if (port == 0) port = NET_SERVER_PORT;
 
-	sys_client->server_port = port;
+	sys_client->port_reliable = port;
 	if (sys_client->timeout == 0) sys_client->timeout = 3000;
 
 	// try and resolve the server. if we time out by sys_client->timeout, don't bother
@@ -47,7 +47,7 @@ bool Client_Connect(char* address, Uint16 port)
 	Logging_LogAll("Successfully resolved hostname!");
 
 	// set up the reliable band. this tries to connect to the server and is used for auth, chat, and low-frequency things.
-	sys_client->socket_reliable = SDLNet_CreateClient(sys_client->server_addr, sys_client->server_port);
+	sys_client->socket_reliable = SDLNet_CreateClient(sys_client->server_addr, sys_client->port_reliable);
 
 	if (sys_client->socket_reliable == NULL)
 	{
@@ -56,23 +56,23 @@ bool Client_Connect(char* address, Uint16 port)
 	}
 
 	//TODO: Varargs support logging
-	printf("Using port %d for reliable updates\n", sys_client->server_port);
+	printf("Using port %d for reliable updates\n", sys_client->port_reliable);
 
-	// todo: reduce the chance two people connecting in the same 1s period don't get the same unreliable port and therefore cannot connect,
-	// use different rand alg?
-	// splitting hairs when not very much works.
+	// allow more than one person to connect per second (otherwise they will have got the same random seed, and then the same unreliable socket port)
+	// nanoseconds are small so should be not predictable.
+	srand(SDL_GetTicksNS());
 
 	// RAND_MAX = 32767 so duplicate 
-	sys_client->client_port = rand() * 2;
+	sys_client->port_unreliable = rand() * 2;
 
-	while (sys_client->client_port < NET_CLIENT_PORT_MIN
-		|| sys_client->client_port > NET_CLIENT_PORT_MAX) sys_client->client_port = rand() * 2;
+	while (sys_client->port_unreliable < NET_CLIENT_PORT_MIN
+		|| sys_client->port_unreliable > NET_CLIENT_PORT_MAX) sys_client->port_unreliable = rand() * 2;
 
-	printf("Using port %d for unreliable updates\n", sys_client->client_port);
+	printf("Using port %d for unreliable updates\n", sys_client->port_unreliable);
 
 	// set up the unreliable band. this doesn't actually try and connect to the server, it just fires shit off at the server
 	// does it go? fuck if i know!!!
-	sys_client->socket_unreliable = SDLNet_CreateDatagramSocket(NULL, sys_client->client_port);
+	sys_client->socket_unreliable = SDLNet_CreateDatagramSocket(NULL, sys_client->port_unreliable);
 	sys_client->name = "Player";
 
 	int connected = SDLNet_WaitUntilConnected(sys_client->socket_reliable, -1);
@@ -98,9 +98,12 @@ void Client_Main()
 	// TODO: packet check
 	while (sys_client_running)
 	{
-		Uint8 buf[NET_MESSAGE_MAX_LENGTH];
+		while (sys_client->connected)
+		{
+			Uint8 buf[NET_MESSAGE_MAX_LENGTH];
+			Client_ReadReliableMessage(buf);
+		}
 
-		Client_ReadReliableMessage(buf);
 
 		// Read unreliable socket message
 
@@ -134,9 +137,12 @@ void Client_ReadReliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH])
 		case msg_auth_clientinfo_request:
 			NET_WriteByteReliable(sys_client->socket_reliable, msg_auth_clientinfo_response);
 			NET_WriteStringReliable(sys_client->socket_reliable, sys_client->name);
-			NET_WriteShortReliable(sys_client->socket_reliable, sys_client->client_port);
+			NET_WriteShortReliable(sys_client->socket_reliable, sys_client->port_unreliable);
 			break;
 	}
+
+	// after processing, prevent it from being processed again by setting msg_waiting to false
+	msg_waiting = false;
 }
 
 void Client_ReadUnreliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH])
@@ -146,7 +152,17 @@ void Client_ReadUnreliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH])
 
 void Client_Disconnect()
 {
+	Logging_LogAll("Client Disconnecting...");
 
+	// We don't care if the server received this.
+	// This is because of the fact that in this situation, the server could have crashed or anything else.
+	NET_WriteByteReliable(sys_client->socket_reliable, msg_disconnect);
+
+	sys_client->signed_in = false;
+	sys_client->connected = false;
+
+	// destroy the sockets
+	SDLNet_DestroyDatagramSocket(sys_client->socket_unreliable);
 }
 
 void Client_Shutdown()

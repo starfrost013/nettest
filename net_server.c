@@ -34,21 +34,6 @@ bool Server_Init()
 	return true;
 }
 
-void Server_Main()
-{
-	Logging_LogAll("The server is now up");
-
-	while (sys_server_running)
-	{
-		// check 
-		if (!Server_CheckForNewClients())
-		{
-			Logging_LogAll("FATAL - Error checking for new clients");
-			Server_Shutdown();
-		}
-	}
-}
-
 bool Server_CheckForNewClients()
 {
 	SDLNet_StreamSocket* next_client;
@@ -167,16 +152,58 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 
 	memset(new_client, 0x00, sizeof(netclient_t));
 
-	new_client->socket_reliable = new_socket;	// Set reliable client
-	new_client->client_port = unreliable_port;	// Sett unreliable port
-	new_client->connected = true;				// This is only used on client side, but set it here anyway
-	new_client->signed_in = true;				// Set to true
-	new_client->name = net_username;
+	new_client->socket_reliable = new_socket;		// Set reliable client
+	new_client->port_unreliable = unreliable_port;	// Set unreliable port
+	new_client->connected = true;					// This is only used on client side, but set it here anyway
+	new_client->signed_in = true;					// Set to true
+	new_client->name = net_username;				// Set up the username
 
 	sys_server->num_clients++;
 
-	printf("User %s joined the game, using unreliable port %d!\n", new_client->name, new_client->client_port);
+	printf("User %s joined the game, using unreliable port %d!\n", new_client->name, new_client->port_unreliable);
 	return true; 
+}
+
+// Main server func
+void Server_Main()
+{
+	Logging_LogAll("The server is now up");
+
+	while (sys_server_running)
+	{
+		// check 
+		if (!Server_CheckForNewClients())
+		{
+			Logging_LogAll("FATAL - Error checking for new clients");
+			Server_Shutdown();
+		}
+
+		// check for reliable messages from clients
+		for (Sint32 client_num = 0; client_num < sys_server->num_clients; client_num++)
+		{
+			netclient_t client = sys_server->clients[client_num];
+
+			Uint8 msg_id = NET_ReadByteReliable(client.socket_reliable);
+
+			if (msg_waiting)
+			{
+				Logging_LogChannel(net_message_names[msg_id], LogChannel_Message);
+
+				// switch msg num
+				switch (msg_id)
+				{
+					case msg_invalid:
+						Logging_LogChannel("INVALID message received from client!", LogChannel_Fatal);
+						break;
+				}
+			}
+			
+			//todo: unreliable
+		}
+
+		// after processing, prevent it from being processed again by setting msg_waiting to false
+		msg_waiting = false;
+	}
 }
 
 void Server_Shutdown()

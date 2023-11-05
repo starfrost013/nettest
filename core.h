@@ -17,8 +17,11 @@
 #include <time.h>
 #endif
 
+// include utils
 #include "logging.h"
-#include "Util.h"
+#include "util.h"
+#include "util_console.h"
+#include "util_math.h"
 
 //
 // Holds modes

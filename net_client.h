@@ -1,5 +1,6 @@
 #pragma once
 #include "net.h"
+#include "render.h"
 
 //
 // net_client.h : Client Core header
@@ -11,18 +12,19 @@ typedef struct netclient_s
 {
 	SDLNet_StreamSocket*	socket_reliable;					//Socket used for communicating with the server. This is used for connecting and low-freq stuff.
 	SDLNet_DatagramSocket*	socket_unreliable;					//Socket used for unreliably communicating with the server. This is used for movement updates and high-freq stuff.
-	SDLNet_Address*			server_addr;						//Address of the server to connect to
+	SDLNet_Address*			server_address;						//Address of the server to connect to
 	Uint16					port_reliable;						//Port of the server to connect to
 	Uint16					port_unreliable;					//Client port used for communicating with server on unreliable band.
 	Sint32					timeout;							//Timeout. If the client isn't connected this amount of milliseconds after creation, it kills itself.
 	char*					name;								//Name of this client
-	SDL_bool				connected;							//Is this client connected?
-	SDL_bool				signed_in;							//Is this client actually signed in? (Client Auth complete)
-} netclient_t;
+	bool					connected;							//Is this client connected?
+	bool					signed_in;							//Is this client actually signed in? (Client Auth complete)
+} client_t;
 
-extern netclient_t*			sys_client;							//Current instance client - CANNOT be present at the same time as sys_server (see net_server.h)
+extern client_t*			sys_client;							//Current instance client - CANNOT be present at the same time as sys_server (see net_server.h)
 
 extern bool					sys_client_running;					//Is the client running?
+extern bool					sys_client_graphics_mode;			//Is the client running in graphics mode?
 
 void	Client_Init();											//Initialises the client (sys_client)
 

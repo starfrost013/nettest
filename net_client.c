@@ -2,14 +2,15 @@
 #include "net_client.h"
 
 bool			sys_client_running;												// Is the client running?	
-netclient_t*	sys_client;														// Current instance client object (cannot be the same as net_server)
+bool			sys_client_graphics_mode;										// Is the client running in graphics mode?
+client_t*		sys_client;														// Current instance client object (cannot be the same as net_server)
 
 void			Client_ReadReliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH]);	// Read client reliable message
 void			Client_ReadUnreliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH]);// Read client unreliable message
 
 void Client_Init()
 {
-	sys_client = malloc(sizeof(netclient_t));
+	sys_client = malloc(sizeof(client_t));
 
 	if (sys_client == NULL)
 	{
@@ -17,7 +18,13 @@ void Client_Init()
 		return;
 	}
 
-	memset(sys_client, 0x00, sizeof(netclient_t));	//Shutup compiler
+	memset(sys_client, 0x00, sizeof(client_t));	//Shutup compiler
+
+	if (sys_client_graphics_mode)
+	{
+		// default renderer
+		Render_Init();
+	}
 }
 
 bool Client_Connect(char* address, Uint16 port)
@@ -42,12 +49,12 @@ bool Client_Connect(char* address, Uint16 port)
 		return false;
 	}
 
-	sys_client->server_addr = addr;
+	sys_client->server_address = addr;
 
 	Logging_LogAll("Successfully resolved hostname!");
 
 	// set up the reliable band. this tries to connect to the server and is used for auth, chat, and low-frequency things.
-	sys_client->socket_reliable = SDLNet_CreateClient(sys_client->server_addr, sys_client->port_reliable);
+	sys_client->socket_reliable = SDLNet_CreateClient(sys_client->server_address, sys_client->port_reliable);
 
 	if (sys_client->socket_reliable == NULL)
 	{
@@ -89,7 +96,6 @@ bool Client_Connect(char* address, Uint16 port)
 	Logging_LogAll("Connection accepted!\n");
 	sys_client->connected = true;
 
-
 	return true;
 }
 
@@ -102,6 +108,8 @@ void Client_Main()
 		{
 			Uint8 buf[NET_MESSAGE_MAX_LENGTH];
 			Client_ReadReliableMessage(buf);
+
+			if (!last_socket_alive) Client_Disconnect();
 		}
 
 
@@ -113,6 +121,18 @@ void Client_Main()
 			Client_ReadUnreliableMessage(buf);
 		}
 		*/
+
+		// todo: graphics_mode
+
+		SDL_Event next_event;
+
+		while (SDL_PollEvent(&next_event))
+		{
+			switch (next_event.type)
+			{
+
+			}
+		}
 	}
 }
 
@@ -163,9 +183,13 @@ void Client_Disconnect()
 
 	// destroy the sockets
 	SDLNet_DestroyDatagramSocket(sys_client->socket_unreliable);
+	SDLNet_DestroyStreamSocket(sys_client->socket_reliable);
+
+	sys_client->socket_unreliable = NULL;
+	sys_client->socket_reliable = NULL;
 }
 
 void Client_Shutdown()
 {
-
+	Render_Shutdown();
 }

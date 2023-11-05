@@ -148,9 +148,17 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 	}
 
 	// add client
-	netclient_t* new_client = &sys_server->clients[sys_server->num_clients];
+	int new_client_number = sys_server->num_clients;
 
-	memset(new_client, 0x00, sizeof(netclient_t));
+	// check if a player that wasn't the most recently joined player left, so that slots aren't used permanently
+	for (int client_number = 0; client_number < new_client_number; client_number++)
+	{
+		if (!sys_server->clients[client_number].signed_in) new_client_number = client_number;
+	}
+
+	client_t* new_client = &sys_server->clients[new_client_number];
+
+	memset(new_client, 0x00, sizeof(client_t));
 
 	new_client->socket_reliable = new_socket;		// Set reliable client
 	new_client->port_unreliable = unreliable_port;	// Set unreliable port
@@ -181,12 +189,22 @@ void Server_Main()
 		// check for reliable messages from clients
 		for (Sint32 client_num = 0; client_num < sys_server->num_clients; client_num++)
 		{
-			netclient_t client = sys_server->clients[client_num];
+			client_t* client = &sys_server->clients[client_num];
 
-			Uint8 msg_id = NET_ReadByteReliable(client.socket_reliable);
-
-			if (msg_waiting)
+			// make sure the client is actually connected
+			if (client->signed_in)
 			{
+				Uint8 msg_id = NET_ReadByteReliable(client->socket_reliable);
+
+				// skip client
+				if (!msg_waiting) continue; 
+				if (!last_socket_alive)
+				{
+					Server_DisconnectClient(client);
+					continue; // bad, but we need to not run through a phantom loop
+				}
+
+				// at this point we have a client that actually sent us a message
 				Logging_LogChannel(net_message_names[msg_id], LogChannel_Message);
 
 				// switch msg num
@@ -195,6 +213,10 @@ void Server_Main()
 					case msg_invalid:
 						Logging_LogChannel("INVALID message received from client!", LogChannel_Fatal);
 						break;
+					case msg_disconnect:
+						Server_DisconnectClient(client);
+						break;
+
 				}
 			}
 			
@@ -206,7 +228,25 @@ void Server_Main()
 	}
 }
 
+void Server_DisconnectClient(client_t* client)
+{
+	Logging_LogChannel("Client disconnected", LogChannel_Message);
+	// just set the client->signed_in to false
+	client->signed_in = false;
+	sys_server->num_clients--;
+}
+
 void Server_Shutdown()
 {
+	// disconnect all clients
 
+	// sys_server->num_clients will fall as we disconnect clients so store it here
+	int current_num_clients = sys_server->num_clients;
+
+	for (Sint32 client_num = 0; client_num < current_num_clients; client_num++)
+	{
+		Server_DisconnectClient(&sys_server->clients[client_num]);
+	}
+
+	SDLNet_DestroyServer(sys_server->server);
 }

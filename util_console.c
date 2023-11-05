@@ -1,5 +1,5 @@
 #pragma once
-#include "util_console.h"
+#include "core.h"
 
 #define EUPHORIA_UTIL_CONSOLE_TERMINAL_COMMAND_PREFIX "\x1B["
 

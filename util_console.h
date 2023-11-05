@@ -1,5 +1,5 @@
 #pragma once
-#include "Util.h"
+
 //
 //	UtilConsole.h: Implements console utilities. Uses ANSI command codes (Windows 10 v1511+ / Linux)
 //

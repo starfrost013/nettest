@@ -29,6 +29,7 @@
 
 // Was the last message successful?
 extern bool		msg_waiting;
+extern bool		last_socket_alive;
 
 //
 // Initialises NET subsystem

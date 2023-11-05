@@ -131,19 +131,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="cmdline_main.c" />
+    <ClCompile Include="cmdline.c" />
+    <ClCompile Include="entity.c" />
     <ClCompile Include="logging.c" />
     <ClCompile Include="nettest.c" />
+    <ClCompile Include="util_math.c" />
+    <ClInclude Include="entity.h" />
     <ClInclude Include="net.h" />
     <ClCompile Include="net_client.c" />
     <ClCompile Include="net.c" />
     <ClCompile Include="net_common.c" />
     <ClCompile Include="net_protocol.c" />
     <ClCompile Include="net_server.c" />
-    <ClCompile Include="r_core.c" />
+    <ClCompile Include="r2d_main.c" />
+    <ClCompile Include="render_main.c" />
+    <ClCompile Include="r3d_main.c" />
     <ClCompile Include="sys.c" />
     <ClCompile Include="util.c" />
     <ClCompile Include="util_console.c" />
+    <ClInclude Include="r2d_main.h" />
+    <ClInclude Include="r3d_main.h" />
+    <ClInclude Include="util_math.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cmdline.h" />
@@ -153,6 +161,7 @@
     <ClInclude Include="net_common.h" />
     <ClInclude Include="net_protocol.h" />
     <ClInclude Include="net_server.h" />
+    <ClInclude Include="render.h" />
     <ClInclude Include="sys.h" />
     <ClInclude Include="util.h" />
     <ClInclude Include="util_console.h" />

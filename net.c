@@ -3,9 +3,10 @@
 #include "net_client.h"
 #include "net_server.h"
 
-bool			msg_waiting;																// Was the last message successful?
-Uint8			net_msg_buffer[NET_MESSAGE_MAX_LENGTH];												// Network Message buffer
-char			net_string_buffer[NET_STRING_MAX_LENGTH-1];											// Buffer to hold strings we read from net (like Quake!)
+bool			msg_waiting;															// Is there a message waiting?
+bool			last_socket_alive;															// Is the socket still alive?
+Uint8			net_msg_buffer[NET_MESSAGE_MAX_LENGTH];									// Network Message buffer
+char			net_string_buffer[NET_STRING_MAX_LENGTH-1];								// Buffer to hold strings we read from net (like Quake!)
 
 void			NET_WriteDataReliable(SDLNet_StreamSocket* socket, int buflen);			// Write data to the reliable band
 void			NET_WriteDataUnreliable(SDLNet_DatagramSocket* socket, int buflen);		// Write data to the unreliable band
@@ -137,7 +138,7 @@ SDLNet_Datagram* NET_IncomingUnreliableMessage(SDLNet_DatagramSocket* socket, in
 	// and return NULL (meaning no messages) otherwise
 	if (sys_mode == mode_client)
 	{
-		if (msg->addr != sys_client->server_addr) return NULL;
+		if (msg->addr != sys_client->server_address) return NULL;
 	}
 
 	// assert if size wrong
@@ -149,26 +150,24 @@ SDLNet_Datagram* NET_IncomingUnreliableMessage(SDLNet_DatagramSocket* socket, in
 
 bool NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, int buflen)
 {
-	// set last message successful value to false
+	// set message waiting value to false, and "socket alive?" value to true
 	msg_waiting = false;
+	last_socket_alive = true;
 
 	// MAX STRING Length 256
 	Sint32 bytes_read = SDLNet_ReadFromStreamSocket(socket, &net_msg_buffer, buflen);
 
-	if (bytes_read <= 0)
+	if (bytes_read == -1)
 	{
-		if (bytes_read == -1)
-		{
-			//TODO: va_args
-			Logging_LogAll("Error reading from reliable socket");
-			Logging_LogAll(SDL_GetError());
+		//TODO: va_args
+		Logging_LogAll("Error reading from reliable socket");
+		Logging_LogAll(SDL_GetError());
 
-			// if we are the client, disconnect
-			if (sys_mode == mode_client) Client_Disconnect();
-
-			return false; // only returns false on failure
-		}
-
+		last_socket_alive = false;
+		return false; // only returns false on failure
+	}
+	else if (bytes_read == 0)
+	{
 		// if we didn't get the message first time...
 
 		if (!msg_waiting)
@@ -184,8 +183,8 @@ bool NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, int buflen)
 			}
 		}
 
-		// ignore if we didn't get enough bytes
-		if (bytes_read < buflen) return true;
+		// there is actually no message waiting
+		if (bytes_read < buflen) return false;
 	}
 
 	// tell everyone else there is actually a message here

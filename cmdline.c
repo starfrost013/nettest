@@ -2,13 +2,14 @@
 #include "cmdline.h"
 
 //
-// cmdline_main.c : Main CMD line parser
+// cmdline.c : CMD line parser
 //
 
 void CmdLine_Parse(int argc, char* argv[])
 {
 	// default values
 	sys_mode = mode_client;
+	sys_client_graphics_mode = true;
 
 	for (int arg_num = 0; arg_num < argc; arg_num++)
 	{
@@ -20,6 +21,12 @@ void CmdLine_Parse(int argc, char* argv[])
 		if (!strcmp(arg, "-server"))
 		{
 			sys_mode = mode_server;
+		}
+
+		// run the client without graphics
+		if (!strcmp(arg, "-nographics"))
+		{
+			sys_client_graphics_mode = false;
 		}
 	}
 }

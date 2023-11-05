@@ -28,14 +28,23 @@
     <Filter Include="Source Files\Sys\Logging">
       <UniqueIdentifier>{e66ba045-a93c-4137-83f5-054db69956c3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Sys\Util">
-      <UniqueIdentifier>{760ea745-de55-4cea-83fc-a18732473ae4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Network\Common">
       <UniqueIdentifier>{7d185700-0a2f-49d0-9265-8107ca575f27}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Render">
       <UniqueIdentifier>{2c60164f-4f16-4cf7-80c2-882cc7d622f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Util">
+      <UniqueIdentifier>{760ea745-de55-4cea-83fc-a18732473ae4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\3Dsoft">
+      <UniqueIdentifier>{76a43f43-697c-4518-8312-3b359a6c0c9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shared">
+      <UniqueIdentifier>{a0448cfe-0390-441b-b69c-d332a9556ba2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\2D">
+      <UniqueIdentifier>{95d39642-f060-4cd0-b6d5-4a16b36b5397}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -45,7 +54,7 @@
     <ClCompile Include="net.c">
       <Filter>Source Files\Network</Filter>
     </ClCompile>
-    <ClCompile Include="cmdline_main.c">
+    <ClCompile Include="cmdline.c">
       <Filter>Source Files\Sys</Filter>
     </ClCompile>
     <ClCompile Include="net_client.c">
@@ -55,10 +64,10 @@
       <Filter>Source Files\Network\Server</Filter>
     </ClCompile>
     <ClCompile Include="util.c">
-      <Filter>Source Files\Sys\Util</Filter>
+      <Filter>Source Files\Util</Filter>
     </ClCompile>
     <ClCompile Include="util_console.c">
-      <Filter>Source Files\Sys\Util</Filter>
+      <Filter>Source Files\Util</Filter>
     </ClCompile>
     <ClCompile Include="logging.c">
       <Filter>Source Files\Sys\Logging</Filter>
@@ -66,14 +75,26 @@
     <ClCompile Include="net_protocol.c">
       <Filter>Source Files\Network</Filter>
     </ClCompile>
+    <ClCompile Include="render_main.c">
+      <Filter>Source Files\Render</Filter>
+    </ClCompile>
     <ClCompile Include="sys.c">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Sys</Filter>
     </ClCompile>
     <ClCompile Include="net_common.c">
+      <Filter>Source Files\Network\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="entity.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="r_core.c">
-      <Filter>Source Files\Render</Filter>
+    <ClCompile Include="r3d_main.c">
+      <Filter>Source Files\Render\3Dsoft</Filter>
+    </ClCompile>
+    <ClCompile Include="r2d_main.c">
+      <Filter>Source Files\Render\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="util_math.c">
+      <Filter>Source Files\Util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -87,10 +108,10 @@
       <Filter>Source Files\Network\Client</Filter>
     </ClInclude>
     <ClInclude Include="util.h">
-      <Filter>Source Files\Sys\Util</Filter>
+      <Filter>Source Files\Util</Filter>
     </ClInclude>
     <ClInclude Include="util_console.h">
-      <Filter>Source Files\Sys\Util</Filter>
+      <Filter>Source Files\Util</Filter>
     </ClInclude>
     <ClInclude Include="logging.h">
       <Filter>Source Files\Sys\Logging</Filter>
@@ -101,14 +122,29 @@
     <ClInclude Include="net_server.h">
       <Filter>Source Files\Network\Server</Filter>
     </ClInclude>
-    <ClInclude Include="sys.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="net.h">
       <Filter>Source Files\Network</Filter>
     </ClInclude>
     <ClInclude Include="net_common.h">
       <Filter>Source Files\Network\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="render.h">
+      <Filter>Source Files\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="entity.h">
+      <Filter>Source Files\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="sys.h">
+      <Filter>Source Files\Sys</Filter>
+    </ClInclude>
+    <ClInclude Include="util_math.h">
+      <Filter>Source Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="r3d_main.h">
+      <Filter>Source Files\Render\3Dsoft</Filter>
+    </ClInclude>
+    <ClInclude Include="r2d_main.h">
+      <Filter>Source Files\Render\2D</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

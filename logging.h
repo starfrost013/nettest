@@ -35,8 +35,8 @@ typedef struct Logger_s
 } Logger;
 
 bool Logging_Init();
-void Logging_LogChannel(const char* text, LogChannel channel);
-void Logging_LogAll(const char* text);
+void Logging_LogChannel(const char* text, LogChannel channel, ...);
+void Logging_LogAll(const char* text, ...);
 void Logging_Shutdown();
 
 Logger* Logger_new();

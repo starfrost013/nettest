@@ -29,7 +29,7 @@ void Client_Init()
 
 bool Client_Connect(char* address, Uint16 port)
 {
-	printf("Connecting to server at %s\n", address);
+	Logging_LogAll("Connecting to server at %s\n", address);
 
 	// set port and timeout
 	if (port == 0) port = NET_SERVER_PORT;
@@ -45,7 +45,7 @@ bool Client_Connect(char* address, Uint16 port)
 	if (addr == NULL
 		|| result != NET_RESOLUTION_RESOLVED)
 	{
-		printf("Error connecting - failed to resolve hostname: %s\n", SDL_GetError());
+		Logging_LogAll("Error connecting - failed to resolve hostname: %s\n", SDL_GetError());
 		return false;
 	}
 
@@ -58,12 +58,11 @@ bool Client_Connect(char* address, Uint16 port)
 
 	if (sys_client->socket_reliable == NULL)
 	{
-		printf("Error connecting - failed to create reliable socket: %s\n", SDL_GetError());
+		Logging_LogAll("Error connecting - failed to create reliable socket: %s", SDL_GetError());
 		return false;
 	}
 
-	//TODO: Varargs support logging
-	printf("Using port %d for reliable updates\n", sys_client->port_reliable);
+	Logging_LogChannel("Using port %d for reliable updates", LogChannel_Message, sys_client->port_reliable);
 
 	// allow more than one person to connect per second (otherwise they will have got the same random seed, and then the same unreliable socket port)
 	// nanoseconds are small so should be not predictable.
@@ -87,7 +86,7 @@ bool Client_Connect(char* address, Uint16 port)
 	// See if the reliable band connected
 	if (connected != NET_CONNECTION_CONNECTED)
 	{
-		printf("Connection timed out: %s\n", SDL_GetError());
+		Logging_LogAll("Connection timed out: %s\n", SDL_GetError());
 		return false;
 	}
 
@@ -110,17 +109,14 @@ void Client_Main()
 			Client_ReadReliableMessage(buf);
 
 			if (!last_socket_alive) Client_Disconnect();
+
+			// Read unreliable socket message
+
+			if (NET_IncomingUnreliableMessage(sys_client->socket_reliable, NET_MESSAGE_MAX_LENGTH) != NULL)
+			{
+				Client_ReadUnreliableMessage(buf);
+			}
 		}
-
-
-		// Read unreliable socket message
-
-		/*
-		if (NET_IncomingUnreliableMessage(sys_client->socket_reliable, buf, NET_MESSAGE_MAX_LENGTH) != NULL)
-		{
-			Client_ReadUnreliableMessage(buf);
-		}
-		*/
 
 		// todo: graphics_mode
 
@@ -130,7 +126,9 @@ void Client_Main()
 		{
 			switch (next_event.type)
 			{
-
+				case SDL_EVENT_QUIT:
+					Client_Shutdown();
+					break;
 			}
 		}
 	}
@@ -159,6 +157,9 @@ void Client_ReadReliableMessage(Uint8 buf[NET_MESSAGE_MAX_LENGTH])
 			NET_WriteStringReliable(sys_client->socket_reliable, sys_client->name);
 			NET_WriteShortReliable(sys_client->socket_reliable, sys_client->port_unreliable);
 			break;
+		case msg_disconnect:
+			char* reason = NET_ReadStringReliable(sys_client->socket_reliable);
+			break;
 	}
 
 	// after processing, prevent it from being processed again by setting msg_waiting to false
@@ -177,6 +178,7 @@ void Client_Disconnect()
 	// We don't care if the server received this.
 	// This is because of the fact that in this situation, the server could have crashed or anything else.
 	NET_WriteByteReliable(sys_client->socket_reliable, msg_disconnect);
+	NET_WriteStringReliable(sys_client->socket_reliable, "Disconnected");
 
 	sys_client->signed_in = false;
 	sys_client->connected = false;
@@ -191,5 +193,6 @@ void Client_Disconnect()
 
 void Client_Shutdown()
 {
+	Client_Disconnect();
 	Render_Shutdown();
 }

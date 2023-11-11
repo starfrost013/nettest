@@ -14,8 +14,7 @@ bool Sys_Init(int argc, char* argv[])
     // Init SDL
     if (SDL_Init(SDL_INIT_EVERYTHING))
     {
-        Logging_LogAll("Failed to initialise SDL");
-        Logging_LogAll(SDL_GetError());
+        Logging_LogAll("Failed to initialise SDL: %s", SDL_GetError());
         return false;
     }
 

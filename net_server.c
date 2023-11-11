@@ -73,12 +73,12 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 
 	memset(&net_username, 0x00, sizeof(net_username));		// Shutup compiler
 
-	// Did the client successfully auth?
-	bool	succeeded_fully = false;
+	bool	sign_on_started = false;						// Did the client start auth?
+	bool	sign_on_completed = false;						// Did the client successfully auth?
 
 	// start a timer
 	while (SDL_GetTicks() < ticks + NET_AUTH_TIMEOUT
-		&& !succeeded_fully)
+		&& !sign_on_completed)
 	{
 		switch (auth_phase)
 		{
@@ -89,6 +89,8 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 
 				if (msg_id == msg_auth_response)
 				{
+					sign_on_started = true;
+
 					protocol_version = NET_ReadByteReliable(new_socket);
 
 					// make sure the right protocol version was sent
@@ -133,7 +135,7 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 						break;
 					}
 
-					succeeded_fully = true;
+					sign_on_completed = true;
 					break;
 				}
 				continue;
@@ -141,10 +143,12 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 	}
 
 	// kill client
-	if (!succeeded_fully)
+	if (!sign_on_completed)
 	{
 		SDLNet_DestroyStreamSocket(new_socket);
-		return false;
+		// return true if there is no client there (sign_on_started == false and sign_on_completed = false)
+		// return false if a client failed halfway through signon (sign_on_started == true and sign_on_completed = false)
+		return !sign_on_started;
 	}
 
 	// add client
@@ -168,7 +172,7 @@ bool Server_AddClient(SDLNet_StreamSocket* new_socket)
 
 	sys_server->num_clients++;
 
-	printf("User %s joined the game, using unreliable port %d!\n", new_client->name, new_client->port_unreliable);
+	Logging_LogChannel("User %s joined the game, using unreliable port %d!\n", LogChannel_Message, new_client->name, new_client->port_unreliable);
 	return true; 
 }
 
@@ -182,7 +186,7 @@ void Server_Main()
 		// check 
 		if (!Server_CheckForNewClients())
 		{
-			Logging_LogAll("FATAL - Error checking for new clients");
+			Logging_LogChannel("FATAL - Error checking for new clients. Shutting down", LogChannel_Fatal);
 			Server_Shutdown();
 		}
 
@@ -230,7 +234,8 @@ void Server_Main()
 
 void Server_DisconnectClient(client_t* client)
 {
-	Logging_LogChannel("Client disconnected", LogChannel_Message);
+	Logging_LogChannel("Client disconnected: ", LogChannel_Message);
+	Logging_LogChannel(NET_ReadStringReliable(client->socket_reliable), LogChannel_Message);
 	// just set the client->signed_in to false
 	client->signed_in = false;
 	sys_server->num_clients--;

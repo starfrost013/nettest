@@ -3,6 +3,8 @@
 #include "Util.h"
 #include "util_console.h"
 
+void	Logging_Log(const char* text, LogChannel channel, va_list args);
+
 Logger* Logger_new()
 {
 	Logger* logger = (Logger*)malloc(sizeof(Logger));
@@ -82,21 +84,38 @@ bool Logging_Init()
 
 void Logging_LogChannel(const char* text, LogChannel channel, ...)
 {
+	va_list	args;
+
+	va_start(args, channel);
+
+	Logging_Log(text, channel, args);
+}
+
+void Logging_LogAll(const char* text, ...)
+{
+	va_list args;
+
+	va_start(args, text);
+
+	Logging_Log(text, LogChannel_Message | LogChannel_Warning | LogChannel_Error | LogChannel_Fatal, args);
+}
+
+// yes this is required
+void Logging_Log(const char* text, LogChannel channel, va_list args)
+{
 	if (!Util_EnumHasFlag(sys_logger->settings->channels, channel))
 	{
 		printf(u8"Log failed: 0x0003DEAD Tried to output to a closed log channel (%d). See logging.h.", channel);
-		return; 
+		return;
 	}
 
-	char* dateBuffer[32];
-	char textBuffer[512];
-	char logStringBuffer[512 + 32];
+	char* date_buffer[32];
+	char log_string_buffer[512 + 32];
 
-	memset(&dateBuffer, 0x00, sizeof dateBuffer);
-	memset(&textBuffer, 0x00, sizeof(textBuffer));
-	memset(&logStringBuffer, 0x00, sizeof(logStringBuffer));
+	memset(&date_buffer, 0x00, sizeof date_buffer);
+	memset(&log_string_buffer, 0x00, sizeof(log_string_buffer));
 
-	Util_DateGetCurrentString(&dateBuffer);
+	Util_DateGetCurrentString(&date_buffer);
 
 	if (strlen(text) > 512)
 	{
@@ -106,11 +125,11 @@ void Logging_LogChannel(const char* text, LogChannel channel, ...)
 
 	// lop off the last character so it doesn't have a new line
 
-	char* finalDateBuffer = *dateBuffer;
-	finalDateBuffer[strlen(finalDateBuffer) - 1] = '\0';
+	char* date_buffer_formatted = *date_buffer;
+	date_buffer_formatted[strlen(date_buffer_formatted) - 1] = '\0';
 
 	const char* prefix = "[";
-	const char* dateSuffix = "]: ";
+	const char* date_suffix = "]: ";
 
 	// print separate colours
 	switch (channel)
@@ -128,17 +147,17 @@ void Logging_LogChannel(const char* text, LogChannel channel, ...)
 
 	const char* suffix = " \n";
 
-	SDL_assert(dateBuffer[0] != NULL);
+	SDL_assert(date_buffer[0] != NULL);
 
-	strcat_s(logStringBuffer, sizeof(logStringBuffer), prefix);
-	strcat_s(logStringBuffer, sizeof(logStringBuffer), finalDateBuffer);
-	strcat_s(textBuffer, sizeof(textBuffer), text);
-	strcat_s(logStringBuffer, sizeof(logStringBuffer), dateSuffix);
-	strcat_s(logStringBuffer, sizeof(logStringBuffer), textBuffer);
-	strcat_s(logStringBuffer, sizeof(logStringBuffer), suffix);
+	strcat_s(log_string_buffer, sizeof(log_string_buffer), prefix);
+	strcat_s(log_string_buffer, sizeof(log_string_buffer), date_buffer_formatted);
+	strcat_s(log_string_buffer, sizeof(log_string_buffer), date_suffix);
+	strcat_s(log_string_buffer, sizeof(log_string_buffer), text);
+
+	strcat_s(log_string_buffer, sizeof(log_string_buffer), suffix);
 
 	if (Util_EnumHasFlag(sys_logger->settings->source, LogSource_Printf))
-	{	
+	{
 		switch (channel)
 		{
 			case LogChannel_Warning:
@@ -150,20 +169,17 @@ void Logging_LogChannel(const char* text, LogChannel channel, ...)
 				break;
 		}
 
-		printf(logStringBuffer);
+		vprintf(log_string_buffer, args);
 
 		Util_ConsoleResetForegroundColor();
 	}
 
 	if (Util_EnumHasFlag(sys_logger->settings->source, LogSource_File))
 	{
-		fwrite(logStringBuffer, strlen(logStringBuffer), 1, sys_logger->handle);
+		vfprintf(sys_logger->handle, log_string_buffer, args);
 	}
-}
 
-void Logging_LogAll(const char* text)
-{
-	Logging_LogChannel(text, LogChannel_Message | LogChannel_Warning | LogChannel_Error | LogChannel_Fatal);
+	va_end(args);
 }
 
 void Logging_Shutdown()

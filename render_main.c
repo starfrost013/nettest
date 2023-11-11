@@ -16,7 +16,7 @@ bool Render_Init()
 	memset(sys_renderer, 0x00, sizeof(sys_renderer));
 	
 	// hardcode for now
-	sys_renderer->type == renderer_3d_soft;
+	sys_renderer->type = renderer_3d_soft;
 	sys_renderer->window_width = 1024;
 	sys_renderer->window_height = 768;
 	sys_renderer->title = "Complicated DirectMoron Layer Window";
@@ -30,8 +30,7 @@ bool Render_Init()
 	if (!sys_renderer->window_ptr
 		|| !sys_renderer->renderer_ptr)
 	{
-		Logging_LogChannel("Failed to initialise SDL3 window:", LogChannel_Fatal);
-		Logging_LogChannel(SDL_GetError(), LogChannel_Fatal);
+		Logging_LogChannel("Failed to initialise SDL3 window: %s", LogChannel_Fatal, SDL_GetError());
 		return false;
 	}
 
@@ -41,14 +40,13 @@ bool Render_Init()
 	if (sys_renderer->type == renderer_2d 
 		|| sys_renderer->type == renderer_3d_soft)
 	{
-		Logging_LogChannel("Soft3D: Creating SDL canvas", LogChannel_Message);
+		Logging_LogChannel("Soft3D: Creating SDL canvas (size: %dx%d)", LogChannel_Message, sys_renderer->window_width, sys_renderer->window_height);
 		// ARGB or rgba?
 		sys_canvas = SDL_CreateTexture(sys_renderer->renderer_ptr, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, sys_renderer->window_width, sys_renderer->window_height);
 		
 		if (sys_canvas == NULL)
 		{
-			Logging_LogChannel("Failed to create software 3D renderer canvas", LogChannel_Fatal);
-			Logging_LogChannel(SDL_GetError(), LogChannel_Fatal);
+			Logging_LogChannel("Failed to create software 3D renderer canvas: %s", LogChannel_Fatal, SDL_GetError());
 			return false;
 		}
 

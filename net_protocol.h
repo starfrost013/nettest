@@ -18,7 +18,7 @@ typedef enum netmessagetype_e
 																
 	msg_auth_clientinfo_response = 4,							//[string] username [short] unreliable port
 
-	msg_disconnect = 5,											//Disconnects.
+	msg_disconnect = 5,											//[string] reason. Disconnects
 } netmessagetype;
 
 // Network Message names for debug

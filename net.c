@@ -18,8 +18,8 @@ void NET_Init()
 {
 	if (SDLNet_Init())
 	{
-		printf("Error initialising SDL_net: %s", SDL_GetError());
-		exit(1);
+		Logging_LogAll("Error initialising SDL_net: %s", SDL_GetError());
+		exit(1); // get rid of this
 	}
 
 	memset(&net_string_buffer, 0x00, sizeof(Uint8) * NET_STRING_MAX_LENGTH - 1);
@@ -29,6 +29,17 @@ void NET_Init()
 Uint8 NET_ReadByteReliable(SDLNet_StreamSocket* socket)
 {
 	if (NET_IncomingReliableMessage(socket, 1) 
+		&& !msg_waiting)
+	{
+		return 0; // see last_msg_successful
+	}
+
+	return net_msg_buffer[0];
+}
+
+Uint8 NET_ReadByteUnreliable(SDLNet_DatagramSocket* socket)
+{
+	if (NET_IncomingUnreliableMessage(socket, 1)
 		&& !msg_waiting)
 	{
 		return 0; // see last_msg_successful
@@ -49,6 +60,19 @@ Sint16 NET_ReadShortReliable(SDLNet_StreamSocket* socket)
 	return (net_msg_buffer[1] << 8) + net_msg_buffer[0];
 }
 
+
+Sint16 NET_ReadShortUnreliable(SDLNet_DatagramSocket* socket)
+{
+	if (NET_IncomingUnreliableMessage(socket, 2)
+		&& !msg_waiting)
+	{
+		return 0; // see last_msg_successful
+	}
+
+	// convert to native ordering on little-endian systems (network is always big-endian)
+	return (net_msg_buffer[1] << 8) + net_msg_buffer[0];
+}
+
 Sint32 NET_ReadIntReliable(SDLNet_StreamSocket* socket)
 {
 	if (NET_IncomingReliableMessage(socket, 4)
@@ -61,6 +85,19 @@ Sint32 NET_ReadIntReliable(SDLNet_StreamSocket* socket)
 	return (net_msg_buffer[3] << 24) + (net_msg_buffer[2] << 16) + (net_msg_buffer[1] << 8) + net_msg_buffer[0];
 }
 
+Sint32 NET_ReadIntUnreliable(SDLNet_DatagramSocket* socket)
+{
+	if (NET_IncomingUnreliableMessage(socket, 4)
+		&& !msg_waiting)
+	{
+		return 0;
+	}
+
+	// convert to native ordering on little-endian systems (network is always big-endian)
+	return (net_msg_buffer[3] << 24) + (net_msg_buffer[2] << 16) + (net_msg_buffer[1] << 8) + net_msg_buffer[0];
+}
+
+
 float NET_ReadFloatReliable(SDLNet_StreamSocket* socket)
 {
 	if (NET_IncomingReliableMessage(socket, 4)
@@ -72,6 +109,19 @@ float NET_ReadFloatReliable(SDLNet_StreamSocket* socket)
 	// convert to native ordering on little-endian systems (network is always big-endian)
 	return (float)((net_msg_buffer[3] << 24) + (net_msg_buffer[2] << 16) + (net_msg_buffer[1] << 8) + net_msg_buffer[0]);
 }
+
+float NET_ReadFloatUnreliable(SDLNet_DatagramSocket* socket)
+{
+	if (NET_IncomingUnreliableMessage(socket, 4)
+		&& !msg_waiting)
+	{
+		return 0;
+	}
+
+	// convert to native ordering on little-endian systems (network is always big-endian)
+	return (float)((net_msg_buffer[3] << 24) + (net_msg_buffer[2] << 16) + (net_msg_buffer[1] << 8) + net_msg_buffer[0]);
+}
+
 
 char* NET_ReadStringReliable(SDLNet_StreamSocket* socket)
 {
@@ -88,7 +138,6 @@ char* NET_ReadStringReliable(SDLNet_StreamSocket* socket)
 	// the string length before receiving the string, and exploits the fact SDL3_net implements a continuous stream so we don't have to send two messages
 	// in NET_WriteStringReliable
 
-
 	if (NET_IncomingReliableMessage(socket, length)
 		&& msg_waiting)
 	{
@@ -100,52 +149,83 @@ char* NET_ReadStringReliable(SDLNet_StreamSocket* socket)
 
 char* NET_ReadStringUnreliable(SDLNet_DatagramSocket* socket)
 {
-	// MAX STRING Length 256
-	SDLNet_Datagram* msg = NET_IncomingUnreliableMessage(socket, NET_STRING_MAX_LENGTH);
-
-	// length is first byte
-	Uint8 length = msg->buf[0];
-
-	// should never happen, so assert
-	SDL_assert(msg->buflen < length);
-
-	// length guaranteed by call to incomingunreliablemessage
-	SDL_strlcpy(&net_string_buffer, msg->buf + 1, NET_STRING_MAX_LENGTH - 1);
-
-	return &net_string_buffer;
-}
-
-SDLNet_Datagram* NET_IncomingUnreliableMessage(SDLNet_DatagramSocket* socket, int expected_length)
-{
-	msg_waiting = false;
-
-	SDLNet_Datagram* msg;
-
-	// dgram is NULL if there are no messages waiting
-	if (!SDLNet_ReceiveDatagram(socket, &msg))
-	{
-		Logging_LogAll("Error - SDLNet_ReceiveDatagram failed!");
-		Logging_LogChannel(SDL_GetError(), LogChannel_Fatal);
-	}
-
-	if (msg == NULL)
+	if (NET_IncomingUnreliableMessage(socket, 1)
+		&& !msg_waiting)
 	{
 		return NULL;
 	}
 
-	// as UDP datagrams can come from anywhere,
-	// we make sure that if we're the client they're only coming from the server address 
-	// and return NULL (meaning no messages) otherwise
-	if (sys_mode == mode_client)
+	// length is first byte
+	Uint8 length = net_msg_buffer[0];
+
+	// recv the rest of the string in a second message (this is in order to get around the fact that we don't know
+	// the string length before receiving the string, and exploits the fact SDL3_net implements a continuous stream so we don't have to send two messages
+	// in NET_WriteStringReliable
+
+	if (NET_IncomingUnreliableMessage(socket, length)
+		&& msg_waiting)
 	{
-		if (msg->addr != sys_client->server_address) return NULL;
+		SDL_strlcpy(&net_string_buffer, &net_msg_buffer, length + 1);
 	}
 
-	// assert if size wrong
-	SDL_assert(msg->buflen >= expected_length);
+	return &net_string_buffer;
+}
 
-	msg_waiting = true;
-	return msg;
+bool NET_IncomingUnreliableMessage(SDLNet_DatagramSocket* socket, int expected_length)
+{
+	msg_waiting = false;
+
+	// double redirection so we have to malloc
+	SDLNet_Datagram* msg = (SDLNet_Datagram*)malloc(sizeof(SDLNet_Datagram));
+
+	if (msg == NULL)
+	{
+		Logging_LogAll("Error - Failed to allocate unreliable message");
+		Logging_LogChannel(SDL_GetError(), LogChannel_Fatal);
+		return false;
+	}
+
+	memset(msg, 0x00, sizeof(SDLNet_Datagram));
+
+	int bytes_read = SDLNet_ReceiveDatagram(socket, &msg);
+
+	// dgram is NULL if there are no messages waiting
+	if (bytes_read == -1)
+	{
+		Logging_LogAll("Error - SDLNet_ReceiveDatagram failed!");
+		Logging_LogChannel(SDL_GetError(), LogChannel_Fatal);
+		return false;
+	}
+	else if (bytes_read == 0 || msg == NULL)
+	{
+		// no message waiting
+		return true;
+	}
+	else // bytes_read > 0 && msg != NULL
+	{
+		// you can't receive half a UDP packet so we don't wait for the rest of the packet to arrive
+
+		// as UDP datagrams can come from anywhere,
+		// we make sure that if we're the client they're only coming from the server address 
+		// and return NULL (meaning no messages) otherwise
+		if (sys_mode == mode_client)
+		{
+			if (msg->addr != sys_client->server_address) return NULL;
+		}
+
+		// assert if size wrong
+		SDL_assert(msg->buflen > expected_length);
+
+		msg_waiting = true;
+
+		memcpy(&net_msg_buffer, msg, expected_length);
+
+		SDLNet_DestroyDatagram(msg);
+		free(msg);
+		return true; 
+	}
+
+	return false;
 }
 
 bool NET_IncomingReliableMessage(SDLNet_StreamSocket* socket, int buflen)
